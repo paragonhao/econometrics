@@ -1,0 +1,64 @@
+---
+output: pdf_document
+graphics: yes
+header-includes:
+    - \usepackage{tabu}
+    - \usepackage{amssymb, amsmath, amsthm}
+    - \usepackage{enumerate}
+    - \renewcommand{\P}{\textrm{P}}
+    - \newcommand{\R}{\mathbb{R}}
+    - \newcommand{\E}{\mathbb{E}}
+    - \newcommand{\var}{{\rm Var}}
+    - \newcommand{\cov}{{\rm Cov}}
+    - \newcommand{\iid}{\stackrel{iid}{\sim}}
+    - \newcommand{\N}{\mathcal{N}}
+---
+\noindent \begin{tabu} to \textwidth {@{}X[4 l] @{}X[r]}
+  \textbf{Problem Set 3} 	       & \\ 
+  \textbf{MFE 402: Econometrics} & \\ 
+  \textbf{Professor Rossi}		   & 
+\end{tabu}
+
+This problem set is designed to review material on the multiple regression model and time series. Include both your R code and output in your answers.
+
+
+## Question 1
+
+Using a sequence of simple regressions computed in `R`, show how to obtain the multiple regression coefficient on $P2$ in the `multi` dataset from the `DataAnalytics` package. 
+
+
+## Question 2
+
+Use matrix formulas and `R` code -- i.e., use `%*%` not `lm` -- to reproduce the least squares coefficients and standard errors shown on slide 17 of Chapter II. The `countryret` dataset is in the `DataAnalytics` package.
+
+
+## Question 3
+
+Run the regression of `VWNFX` on `vwretd`.
+
+a. Compute a 90\% prediction interval for `VWNFX` when `vwretd` = 0.05 using the formulas in the class notes.
+b. Check your work in part (a) by computing a 90\% prediction interval using R's `predict` command.
+
+
+## Question 4
+
+Define the mean return vector and the symmetric variance-covariance matrix for 3 assets as follows:
+
+$$ \mu = \begin{bmatrix} 0.010 \\ 0.015 \\ 0.025 \end{bmatrix} \hspace{3em} \Sigma = \begin{bmatrix} 0.0016 & 0.0010 & 0.0015 \\  & 0.0020 & 0.0019 \\  &  & 0.0042 \end{bmatrix} $$
+
+a. Compute the correlation matrix of these three assets from the variance-covariance matrix $\Sigma$ by dividing the $(i,j)$ element of $\Sigma$ by $\sigma_i$ and $\sigma_j$. You must use matrix operations (e.g., `diag()`, `X*Y`, or `X%*%Y`) in your answer. You may not use a loop and you may not use the `R` function `cov2cor`. 
+b. Compute the mean and standard deviation of a portfolio made from these assets with weights $(0.3, 0.4, 0.3)$
+
+
+## Question 5
+
+Using the same data as in Question 3 above and following the lecture slides (Chapter 3, section g), test the general linear hypothesis that $\beta_{up} = \beta_{down}$ in the following regression. Note that if you account for the `NA` values properly, you should get a slightly different result than what is presented in the lecture slides.
+
+$$ VWNFX_t = \alpha + \beta_{up}*vwretd_t^{+} + \beta_{down}*vwretd_t^{-} + \varepsilon_t $$
+
+
+## Question 6
+
+Retrieve the Apple stock price series using the `quantmod` package (as done in the notes). Plot the autocorrelations of the difference in log prices.
+
+
