@@ -65,19 +65,14 @@ $$ var(b_0) = \sigma^2[\frac{1}{N} + \frac{\bar X^2}{ (N-1)s^2_X }]$$
 ## Question 2
 
 (a)
-```{r eval=FALSE}
-simple_linear_regression <- function(beta_0, beta_1, x, sigma){
-  return(beta_0 + beta_1 * x + rnorm(length(x),0, sigma))
-}
-```
-```{r echo=FALSE}
+```{r}
 simple_linear_regression <- function(beta_0, beta_1, x, sigma){
   return(beta_0 + beta_1 * x + rnorm(length(x),0, sigma))
 }
 ```
 
 (b)
-```{r eval=FALSE}
+```{r}
 library(DataAnalytics)
 data(marketRf)
 vwretd=marketRf$vwretd
@@ -88,23 +83,13 @@ abline(a = 1, b =20,col="blue")
 legend("topright", c("Fitted Line", "True conditional mean"), col=c("red", "blue"), lwd=10)
 ```
 
-```{r echo=FALSE}
-library(DataAnalytics)
-data(marketRf)
-vwretd=marketRf$vwretd
-y <- simple_linear_regression(beta_0 = 1, beta_1 = 20, vwretd, sigma=1)
-plot(vwretd,y,main="Scatterplot",xlab="vwretd ", ylab="y", pch=20)
-abline(lm(y~vwretd), col="red")
-abline(a = 1, b =20,col="blue")
-legend("topright", c("Fitted Line", "True conditional mean"), col=c("red", "blue"), lwd=10)
-```
 
 
 ## Question 3
 
 (a) 
 Randomly select a sample of 300 from vwretd
-```{r eval=FALSE}
+```{r}
 nsample =10000
 beta_0_dist= double(nsample)
 set.seed(0903)
@@ -117,25 +102,10 @@ for(i in 1:nsample){
 hist(beta_0_dist, breaks = 40, col = "blue", main = "Distribution of Beta 0")
 ```
 
-```{r echo=FALSE}
-nsample =10000
-beta_0_dist= double(nsample)
-set.seed(0903)
-sample_x <- sample(vwretd,300, replace = FALSE)
-set.seed(1234)
-for(i in 1:nsample){
-  y =  simple_linear_regression(beta_0 = 2, beta_1 = 0.6, sample_x, sigma=sqrt(2))
-  beta_0_dist[i] = lm(y~sample_x)$coef[1]
-}
-hist(beta_0_dist, breaks = 40, col = "blue", main = "Distribution of Beta 0")
-```
 
 (b)
 Empirical value of $E[b_0]:$
-```{r eval=FALSE}
-mean(beta_0_dist)
-```
-```{r echo=FALSE}
+```{r}
 mean(beta_0_dist)
 ```
 Theoretical value of $E[b_0] = \beta_0 =2$ According to 1b.
@@ -145,10 +115,7 @@ The two values are very close to each other
 (c) 
 
 Empirical value of $Var[b_0]:$
-```{r eval=FALSE}
-var(beta_0_dist)
-```
-```{r echo=FALSE}
+```{r}
 var(beta_0_dist)
 ```
 
@@ -158,11 +125,7 @@ $$var(b_0) = \sigma^2[\frac{1}{N} + \frac{\bar X^2}{\sum_{i=0}^n(X_i -\bar X)^2}
 
 Theoretical value of$Var[b_0]:$
 
-```{r eval=FALSE}
-s_square <- sum((sample_x - mean(sample_x))^2)
-2 * ((1/300) + (mean(sample_x)^2)/s_square)
-```
-```{r echo=FALSE}
+```{r}
 s_square <- sum((sample_x - mean(sample_x))^2)
 2 * ((1/300) + (mean(sample_x)^2)/s_square)
 ```
@@ -171,7 +134,7 @@ The two values are very close to each other
 
 ## Question 4
 (a)
-```{r eval=FALSE}
+```{r}
 library(reshape2)
 data(Vanguard)
 VFIAX <- subset(Vanguard, ticker == "VFIAX")
@@ -197,57 +160,25 @@ t.value_beta1
 qt(c(.025, .975), df=df-1)
 ```
 
-```{r echo=FALSE}
-library(reshape2)
-data(Vanguard)
-VFIAX <- subset(Vanguard, ticker == "VFIAX")
-VFIAX_reshaped=dcast(VFIAX,date~ticker,value.var="mret")
-vwretd_date <-marketRf[c("date","vwretd")]
-#V_reshaped$VFIAX
-merged_data <- merge(VFIAX_reshaped,vwretd_date,by="date")
-beta_1_hyptest <- lm(VFIAX~vwretd, data = merged_data)$coef[2]
-beta_0_hyptest <- lm(VFIAX~vwretd, data = merged_data)$coef[1]
-
-df <- dim(merged_data)[1]
-
-y.hat <- beta_0_hyptest + beta_1_hyptest * merged_data$vwretd
-y <- merged_data$VFIAX
-x <- merged_data$vwretd
-x_bar <- mean(merged_data$vwretd)
-var_x <- sum((x - mean(x))^2)
-s_square <- sum((y - y.hat)^2)/(df-2)
-
-s_b_1 <- sqrt(s_square)/sqrt(var_x)
-t.value_beta1 <- (beta_1_hyptest - 1)/ s_b_1
-```
 t value for $\beta_1$ is:
 ```{r echo=FALSE}
 t.value_beta1
 ```
 
 Using qt() to find the confidence interval:
-```{r echo=FALSE}
-qt(c(.025, .975), df=df-2)
-```
-```{r eval=FALSE}
+```{r}
 qt(c(.025, .975), df=df-2)
 ```
 Hence we reject the null hypothesis.
 
 (b) Find the p-value for $\beta_0$:
-```{r echo=FALSE}
-s_b_0 = sqrt(s_square * ((1/df) + x_bar^2 / ((df-1) * var_x)))
+```{r}
+s_b_0 = sqrt(s_square * ((1/df) + (x_bar^2 / var_x )))
 t.value_beta0 <- (beta_0_hyptest - 0)/ s_b_0
 pvalue <- 2 *pt(-abs(t.value_beta0), df = df -2)
 pvalue
 ```
 
-```{r eval=FALSE}
-s_b_0 = sqrt(s_square * ((1/df) + x_bar^2 / ((df-1) * var_x)))
-t.value_beta0 <- (beta_0_hyptest - 0)/ s_b_0
-pvalue <- 2 *pt(-abs(t.value_beta0), df = df -2)
-pvalue
-```
 Since the value is bigger than 0.01, We cant reject the null hypothesis
 
 ## Question 5
@@ -265,3 +196,42 @@ Since the value is bigger than 0.01, We cant reject the null hypothesis
 ## Queston 6 
 
 (a). 
+Find the cofficients using the  lm function and plug into the function
+$\bar Y = b_0 + b_1 \bar X$ where $\bar X$ is 0.05 in this case.
+```{r}
+VGHCX <- subset(Vanguard, ticker == "VGHCX")
+VGHCX_reshaped=dcast(VGHCX,date~ticker,value.var="mret")
+vwretd_date <-marketRf[c("date","vwretd")]
+VGHCX_vwretd <- merge(VGHCX_reshaped,vwretd_date,by="date")
+out <- lm(VGHCX~vwretd, data = VGHCX_vwretd)
+conditional_mean <- out$coef[1] + out$coef[2] * 0.05
+conditional_mean
+```
+
+(b).
+Using the following formula to get the conditional SD of the return:
+$$Var(\hat Y_f) = \sigma^2(\frac{1}{N} + \frac{(X_f - \bar X)^2}{(N-1)s_X^2})$$
+```{r}
+y_qn_6 <- VGHCX_vwretd$VGHCX
+x_qn_6 <- VGHCX_vwretd$vwretd
+x_star <- 0.1
+n <- length(y_qn_6)
+denominator <- sum((x_qn_6 - mean(x_qn_6))^2)
+numerator <- (x_star - mean(x_qn_6))^2
+y.hat <- out$coef[1] + out$coef[2] * x_qn_6
+df <- length(y_qn_6)
+s_2 <- sum((y_qn_6 - y.hat)^2)/(df-2)
+conditional_sd <- sqrt((numerator/denominator) + (1/n)) * sqrt(s_2)
+conditional_sd
+```
+
+(c).
+Using the formual for $s_{pred}$:
+$$s_{pred}= s\sqrt{1 + \frac{1}{N} + \frac{(X_f - \bar X)^2}{\sum_{i=0}^N(X_i - \bar X)^2}}$$
+```{r}
+x_star <- 0.15
+denominator <- sum((x_qn_6 - mean(x_qn_6))^2)
+numerator <- (x_star - mean(x_qn_6))^2
+s_pred <- sqrt((numerator/denominator) + (1/n) + 1) * sqrt(s_2)
+s_pred
+```
