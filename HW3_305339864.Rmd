@@ -1,0 +1,219 @@
+---
+output: pdf_document
+graphics: yes
+header-includes:
+    - \usepackage{tabu}
+    - \usepackage{amssymb, amsmath, amsthm}
+    - \usepackage{enumerate}
+    - \renewcommand{\P}{\textrm{P}}
+    - \newcommand{\R}{\mathbb{R}}
+    - \newcommand{\E}{\mathbb{E}}
+    - \newcommand{\var}{{\rm Var}}
+    - \newcommand{\cov}{{\rm Cov}}
+    - \newcommand{\iid}{\stackrel{iid}{\sim}}
+    - \newcommand{\N}{\mathcal{N}}
+---
+\noindent \begin{tabu} to \textwidth {@{}X[4 l] @{}X[r]}
+  \textbf{Problem Set 3} 	       & \\ 
+  \textbf{MFE 402: Econometrics} & \\ 
+  \textbf{Professor Rossi}		   & \\
+  \textbf{Student: Xiahao Wang}	 & \\
+  \textbf{ID: 305229864}		   & 
+\end{tabu}
+
+This problem set is designed to review material on the multiple regression model and time series. Include both your R code and output in your answers.
+
+
+## Question 1
+
+Using a sequence of simple regressions computed in `R`, show how to obtain the multiple regression coefficient on $P2$ in the `multi` dataset from the `DataAnalytics` package. 
+
+ANS:
+Run the following code:
+```{r}
+library(DataAnalytics)
+data(multi)
+e_2.1 = lm(p2~p1,data = multi)$residuals
+lm(Sales ~ e_2.1, data = multi)
+```
+Verify using Multi-linear Regression:
+```{r}
+out=with(multi,
+     lm(Sales~p1+p2)
+)
+lmSumm(out)
+```
+The coefficient is 108.8
+
+## Question 2
+
+Use matrix formulas and `R` code -- i.e., use `%*%` not `lm` -- to reproduce the least squares coefficients and standard errors shown on slide 17 of Chapter II. The `countryret` dataset is in the `DataAnalytics` package.
+
+```{r}
+data(countryret)
+y = countryret$usa
+x = cbind(rep(1,length(y)),countryret$canada,countryret$uk,
+          countryret$australia,countryret$france,countryret$germany,
+          countryret$japan)
+y <- as.matrix(y,ncol=1)
+x <- as.matrix(x, ncol=6)
+b <- chol2inv(chol(crossprod(x))) %*% crossprod(x,y)
+e <- y - x%*%b
+ssq <- sum(e*e)/(length(y)-ncol(x))
+var_b <- ssq * chol2inv(chol(crossprod(x)))
+std_err <- sqrt(diag(var_b))
+names(std_err) <- c("intercept", "canada","uk","australia", "france","germany","japan")
+```
+Coefficients
+```{r}
+b <- as.vector(b)
+names(b) <- c("intercept", "canada","uk","australia", "france","germany","japan")
+b
+```
+
+Standard Errors
+```{r}
+std_err
+```
+
+Verify Using `lm`
+```{r}
+out = lm(usa~canada + uk + australia + france + germany + japan, data=countryret)
+lmSumm(out)
+```
+
+## Question 3
+
+Run the regression of `VWNFX` on `vwretd`.
+
+a. Compute a 90\% prediction interval for `VWNFX` when `vwretd` = 0.05 using the formulas in the class notes.
+b. Check your work in part (a) by computing a 90\% prediction interval using R's `predict` command.
+(a)
+```{r}
+library(reshape2)
+data(Vanguard)
+data(marketRf)
+vwretd_date <-marketRf[c("date","vwretd")]
+VWNFX <- subset(Vanguard, ticker == "VWNFX")
+vanguard_reshaped <- dcast(VWNFX, date~ticker,value.var="mret")
+merged_data <- merge(vanguard_reshaped,vwretd_date,by="date")
+out <- lm(VWNFX~vwretd, data = merged_data)
+lmSumm(out)
+```
+Standard error of the regression is 0.01698
+Using the formual for $s_{pred}$:
+$$s_{pred}= s\sqrt{1 + \frac{1}{N} + \frac{(X_f - \bar X)^2}{\sum_{i=0}^N(X_i - \bar X)^2}}$$
+```{r}
+b_1 <- out$coefficients[2]
+b_0 <- out$coefficients[1]
+x_i <- merged_data$vwretd
+x_bar <- mean(merged_data$vwretd)
+
+x_f <- 0.05
+N <- 336
+df <- N-2
+
+y.hat <- b_0 + b_1 * merged_data$vwretd
+x <- merged_data$vwretd
+s_square <- sum((merged_data$VWNFX - y.hat)^2)/(df)
+s <- sqrt(s_square)
+denominator <- sum((x_i - x_bar)^2)
+
+spred <- s * sqrt(1 + (1/N) + (x_f - (x_bar))^2 / denominator )
+
+t_value <- qt(0.95, df = 334)
+fittedV <- b_0 + b_1 * x_f
+upper <- b_0 + b_1 * x_f + t_value * spred
+lower <- b_0 + b_1 * x_f - t_value * spred
+predict_res <- data.frame(as.numeric(lower), as.numeric(upper), as.numeric(fittedV))
+colnames(predict_res) <- c("Lower", "Upper","Fitted")
+predict_res
+```
+(b) verify using `predict`
+```{r}
+predict(out, new = data.frame(vwretd=0.05),int="prediction", level=0.9)
+```
+
+## Question 4
+
+Define the mean return vector and the symmetric variance-covariance matrix for 3 assets as follows:
+
+$$ \mu = \begin{bmatrix} 0.010 \\ 0.015 \\ 0.025 \end{bmatrix} \hspace{3em} \Sigma = \begin{bmatrix} 0.0016 & 0.0010 & 0.0015 \\  & 0.0020 & 0.0019 \\  &  & 0.0042 \end{bmatrix} $$
+
+a. Compute the correlation matrix of these three assets from the variance-covariance matrix $\Sigma$ by dividing the $(i,j)$ element of $\Sigma$ by $\sigma_i$ and $\sigma_j$. You must use matrix operations (e.g., `diag()`, `X*Y`, or `X%*%Y`) in your answer. You may not use a loop and you may not use the `R` function `cov2cor`. 
+b. Compute the mean and standard deviation of a portfolio made from these assets with weights $(0.3, 0.4, 0.3)$
+
+(a) Initialize matrix $\mu$ and $\Sigma$
+```{r}
+mu <- matrix(c(0.01,0.015,0.025))
+covariance_mat <- matrix(c(0.0016, 0.0010, 0.0015, 
+                           0,0.0020,0.0019,0,0,0.0042), nrow=3, ncol=3, byrow=TRUE)
+variance <- matrix(diag(covariance_mat))
+sigma <- sqrt(variance)
+D <- sigma %*% t(sigma)
+covariance_mat * (1/D)
+```
+verify using `cov2cor`
+```{r}
+cov2cor(covariance_mat)
+```
+
+(b)
+```{r}
+covariance_mat <- matrix(c(0.0016, 0.0010, 0.0015, 0.001,
+                           0.0020,0.0019,0.0015,0.0019,0.0042), nrow=3, ncol=3, byrow=TRUE)
+weights <- matrix(c(0.3,0.4,0.3), nrow = 3, ncol=1)
+expected_ret <- t(weights) %*% mu
+variance_port <- t(weights) %*% covariance_mat %*% weights
+sd_port <- sqrt(variance_port)
+qn4_res <- data.frame(expected_ret, sd_port)
+colnames(qn4_res) <- c("Expected Return", "Standard Deviation")
+qn4_res
+```
+
+## Question 5
+
+Using the same data as in Question 3 above and following the lecture slides (Chapter 3, section g), test the general linear hypothesis that $\beta_{up} = \beta_{down}$ in the following regression. Note that if you account for the `NA` values properly, you should get a slightly different result than what is presented in the lecture slides.
+
+$$ VWNFX_t = \alpha + \beta_{up}*vwretd_t^{+} + \beta_{down}*vwretd_t^{-} + \varepsilon_t $$
+```{r}
+data(Vanguard)
+van <- Vanguard[,c(1,2,5)]
+v_reshaped <- dcast(van,date~ticker, value.var = "mret")
+reshaped_cleaned <- v_reshaped[-which(is.na(v_reshaped$VWNFX)),]
+data(marketRf)
+Van_mkt <- merge(reshaped_cleaned,marketRf, by="date")
+mkt_up <- ifelse(Van_mkt$vwretd > 0,1,0) 
+Van_mkt$upvw <- mkt_up * Van_mkt$vwretd
+Van_mkt$dwnvw <- (1-mkt_up) * Van_mkt$vwretd
+mkt_timing <- lm(VWNFX~upvw+dwnvw, data = Van_mkt)
+lmSumm(mkt_timing)
+
+R <- matrix(c(0,1,-1), byrow=TRUE, nrow=1)
+r <- c(0)
+X <- cbind(c(rep(1, nrow(Van_mkt))), Van_mkt$upvw, Van_mkt$dwnvw)
+b <- as.vector(mkt_timing$coef)
+QFmat <- chol2inv(chol(crossprod(X)))
+QFmat <- R%*%QFmat%*%t(R)
+Violation <- R%*%b - matrix(r, ncol=1)
+fnum <- t(Violation)%*%chol2inv(chol(QFmat))%*%Violation
+n_minus_k <- nrow(Van_mkt) - length(b)
+fdenom <- nrow(R)*sum(mkt_timing$resid ** 2)/n_minus_k
+f <- fnum/ fdenom
+pvalue <- 1 - pf(f, df1 = nrow(R), df2 =n_minus_k)
+qn5_res <- data.frame(f , pvalue)
+colnames(qn5_res) <- c("F", "P value")
+qn5_res
+```
+Given as fvalue is small and pvalue is bigger than 5% CI, we fail to reject the hypothesis.
+
+## Question 6
+
+Retrieve the Apple stock price series using the `quantmod` package (as done in the notes). Plot the autocorrelations of the difference in log prices.
+```{r}
+library(quantmod)
+getSymbols(Symbols = 'AAPL')
+dif_log_price <- diff(log(AAPL$AAPL.Close), difference = 1)
+acf(dif_log_price[-1,])
+```
+
