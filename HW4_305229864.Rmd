@@ -32,11 +32,12 @@ c. A random walk: $y_t = y_{t-1} + \varepsilon_t$
 
 (a) linear trend model
 ```{r}
+library(DataAnalytics)
 num <- 100
 alpha <- 0.5 
 beta <- 0.8
-sigma <- 1
-mu <- 0
+sigma <- 10
+mu <- 1
 t <- 1:num
 y <- double(num)
 for(i in 1:num){
@@ -49,32 +50,16 @@ plot(y, type = "l" )
 simulate using arima.sim function
 
 ```{r}
-ar1 <- arima.sim(model = list(order = c(1, 0, 0), ar = .9), n = 100) 
-plot(ar1)
-```
-
-
-or simulate using FRED data 
-
-```{r}
-library(DataAnalytics)
-library(quantmod)
-getSymbols("GDPC1",src = "FRED")            
-lnGDP <- log(GDPC1)
-trend <-1:length(lnGDP)
-out <- lm(lnGDP~trend)
-
-lnGDP <- as.vector(lnGDP)
-nstep <- 50
-out.ar <- lm(lnGDP~back(lnGDP))
-pred.ar <- double(nstep+1)
-pred.ar[1] <- lnGDP[length(lnGDP)]
-for(i in 1:nstep){
-  pred.ar[i+1] <- out.ar$coef[1] + out.ar$coef[2] * pred.ar[i] + rnorm(1, mean = mu, sd=sigma )
+#can be simulated using arima
+#ar1 <- arima.sim(model = list(order = c(1, 0, 0), ar = .9), n = 100) 
+ar1 <- double(num)
+for(i in 2:num){
+  ar1[i] <- alpha + beta * ar1[i-1] + rnorm(1, mean = mu, sd=sigma )
 }
 
-plot(pred.ar, type="l", ylab="AR1")
+plot(ar1,type = "l")
 ```
+
 
 (c)
 random walk
@@ -155,10 +140,12 @@ Given autocorrelation is zero,
 $cov(y_t, y_{t-1})  = 0$, hence $\beta = 0$ hence $y_t$ ~ N(0, $\sigma^2_\varepsilon$)
 and $y_{t-1}$ ~ N(0, $\sigma^2_\varepsilon$)
 
-hence $s_{b_1} = \sqrt \frac{\sigma^2_\varepsilon}{(N-1)\sigma^2_\varepsilon} = \frac{1}{\sqrt {N-1}}$
+hence 
+$$s_{b_1} = \sqrt \frac{\sigma^2_\varepsilon}{(N-1)\sigma^2_\varepsilon} = \frac{1}{\sqrt {N-1}}$$
 
-Lag 1, only N-1 time period in the regresion. N-1 = T,
-Hence the standard deviation of the sample autocorrelation is $1/\sqrt{T}$
+Lag 1, sample size is T-2.
+
+Given a large T value, the standard deviation of the sample autocorrelation can be approximated as $1/\sqrt{T}$
 
 ## Question 4
 
@@ -196,7 +183,7 @@ lmSumm(out)
 price premium is:
 
 ```{r}
-price_premium
+print(paste0(round(exp(price_premium) - 1,3) * 100 ,"%"))
 # or use the following code below lm recognizes factor 
 # out2 <- lm(log(price) ~ log(carat) + factor(clarity, order = F), data=diamonds_clarity)
 
